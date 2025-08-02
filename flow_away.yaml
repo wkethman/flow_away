@@ -1,14 +1,12 @@
 blueprint:
-  name: Water Leak Detection While Away
+  name: Water leak detection while away
+  author: wkethman
   description: >-
     Runs a script when water flow is detected while the house is in "away" mode,
     unless a known water source (like a dishwasher or washing machine) is running.
     This is useful for preventing false alarms from legitimate water use that
     might occur when you are not home.
-
   domain: automation
-  source_url: https://community.home-assistant.io/t/water-leak-detection-while-away-blueprint/12345
-
   input:
     water_flow_sensor:
       name: Water Flow Sensor
@@ -18,9 +16,9 @@ blueprint:
           domain: binary_sensor
           device_class: moisture
 
-    away_mode_sensor:
-      name: Away Mode Sensor
-      description: A sensor that indicates if you are away (e.g., a person, group, or input_boolean).
+    home_mode_sensor:
+      name: Home Mode Sensor
+      description: A sensor that is 'on' when you are home and 'off' when you are away.
       selector:
         entity:
           domain: binary_sensor
@@ -41,6 +39,7 @@ blueprint:
         entity:
           domain: script
 
+mode: single
 # This is the trigger for the automation.
 # It will start when the water flow sensor turns on.
 trigger:
@@ -53,11 +52,11 @@ trigger:
 condition:
   - condition: and
     conditions:
-      # Condition 1: Check if the away mode sensor is on.
+      # Condition 1: Check if the home mode sensor is off (indicating you are away).
       - condition: state
-        entity_id: !input away_mode_sensor
-        state: "on"
-        alias: "Check if we are away"
+        entity_id: !input home_mode_sensor
+        state: "off"
+        alias: "Check if we are away (Home Mode is off)"
 
       # Condition 2: Check that all known water sources are off.
       # The group's state will be 'on' if any member sensor is 'on'.
