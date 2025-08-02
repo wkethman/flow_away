@@ -1,0 +1,1 @@
+Runs a script when water flow is detected while the house is in "away" mode, unless a known water source (like a dishwasher or washing machine) is running. This is useful for preventing false alarms from legitimate water use that might occur when you are not home.
