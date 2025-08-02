@@ -22,7 +22,7 @@ blueprint:
       description: (Optional) A group of binary leak sensors. The automation will trigger if any sensor in the group detects a leak.
       selector:
         entity:
-          domain: group
+          domain: binary_sensor
       default: {}
 
     home_mode_sensor:
@@ -39,7 +39,7 @@ blueprint:
         If any sensor is 'on', the action is blocked (for the general water flow sensor only).
       selector:
         entity:
-          domain: group
+          domain: binary_sensor
 
     action_script:
       name: Action Script
