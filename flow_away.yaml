@@ -1,0 +1,74 @@
+blueprint:
+  name: Water Leak Detection While Away
+  description: >-
+    Runs a script when water flow is detected while the house is in "away" mode,
+    unless a known water source (like a dishwasher or washing machine) is running.
+    This is useful for preventing false alarms from legitimate water use that
+    might occur when you are not home.
+
+  domain: automation
+  source_url: https://community.home-assistant.io/t/water-leak-detection-while-away-blueprint/12345
+
+  input:
+    water_flow_sensor:
+      name: Water Flow Sensor
+      description: The binary sensor that detects water flow.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: moisture
+
+    away_mode_sensor:
+      name: Away Mode Sensor
+      description: A sensor that indicates if you are away (e.g., a person, group, or input_boolean).
+      selector:
+        entity:
+          domain: binary_sensor
+
+    override_group:
+      name: Known Water Sources Group
+      description: >-
+        A group of binary sensors that indicate known water usage (e.g., dishwasher, washing machine).
+        If any sensor in this group is 'on', the automation will not run.
+      selector:
+        entity:
+          domain: group
+
+    action_script:
+      name: Action Script
+      description: The script to run when a water leak is detected.
+      selector:
+        entity:
+          domain: script
+
+# This is the trigger for the automation.
+# It will start when the water flow sensor turns on.
+trigger:
+  - platform: state
+    entity_id: !input water_flow_sensor
+    to: "on"
+    id: water_flow_detected
+
+# These are the conditions that must be met for the action to run.
+condition:
+  - condition: and
+    conditions:
+      # Condition 1: Check if the away mode sensor is on.
+      - condition: state
+        entity_id: !input away_mode_sensor
+        state: "on"
+        alias: "Check if we are away"
+
+      # Condition 2: Check that all known water sources are off.
+      # The group's state will be 'on' if any member sensor is 'on'.
+      - condition: state
+        entity_id: !input override_group
+        state: "off"
+        alias: "Check that known water sources are off"
+
+# This is the action that will be performed if the trigger fires and all conditions are met.
+action:
+  - alias: "Run the specified script"
+    service: script.turn_on
+    target:
+      entity_id: !input action_script
