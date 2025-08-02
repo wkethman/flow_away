@@ -73,25 +73,23 @@ action:
             service: script.turn_on
             target:
               entity_id: !input action_script
-
-    # Default option: This runs if the trigger was not 'leak_detected' (i.e., it was 'water_flow_detected').
-    # It contains its own conditions.
-    default:
-      - condition: and
-        conditions:
-          # Condition 1: Check if the home mode sensor is off (indicating you are away).
+      # Option 2: Water flow was detected. This action has its own conditions.
+      - conditions:
+          # Condition 2a: Triggered by the water flow sensor.
+          - condition: trigger
+            id: "water_flow_detected"
+          # Condition 2b: Check if the home mode sensor is off (indicating you are away).
           - condition: state
             entity_id: !input home_mode_sensor
             state: "off"
             alias: "Check if we are away"
-
-          # Condition 2: Check that all known water sources are off.
+          # Condition 2c: Check that all known water sources are off.
           - condition: state
             entity_id: !input override_group
             state: "off"
             alias: "Check that known water sources are off"
-        # This sequence only runs if the conditions for the water flow sensor are met.
         sequence:
+          # This sequence only runs if all conditions for Option 2 are met.
           - alias: "Water flow detected and conditions met, running script"
             service: script.turn_on
             target:
