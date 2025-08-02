@@ -1,0 +1,98 @@
+blueprint:
+  name: Water leak detected or flow while away
+  author: wkethman
+  description: >-
+    Runs a script when water flow is detected while the house is in "away" mode,
+    unless a known water source (like a dishwasher or washing machine) is running.
+    This is useful for preventing false alarms from legitimate water use that
+    might occur when you are not home. The script will also trigger if any sensor
+    from the leak group detects a leak.
+  domain: automation
+  input:
+    water_flow_sensor:
+      name: Water Flow Sensor
+      description: The binary sensor that detects water flow.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: moisture
+
+    leak_sensor_group:
+      name: Leak Sensor Group
+      description: (Optional) A group of binary leak sensors. The automation will trigger if any sensor in the group detects a leak.
+      selector:
+        entity:
+          domain: group
+      default: {}
+
+    home_mode_sensor:
+      name: Home Mode Sensor
+      description: A sensor that is 'on' when you are home and 'off' when you are away.
+      selector:
+        entity:
+          domain: binary_sensor
+
+    override_group:
+      name: Known Water Sources Group
+      description: >-
+        A group of binary sensors for known water usage (e.g., dishwasher).
+        If any sensor is 'on', the action is blocked (for the general water flow sensor only).
+      selector:
+        entity:
+          domain: group
+
+    action_script:
+      name: Action Script
+      description: The script to run when a water leak is detected.
+      selector:
+        entity:
+          domain: script
+
+mode: single
+
+# This is the trigger for the automation.
+# It will start when the water flow sensor or a leak sensor turns on.
+trigger:
+  - platform: state
+    entity_id: !input water_flow_sensor
+    to: "on"
+    id: water_flow_detected
+  - platform: state
+    entity_id: !input leak_sensor_group
+    to: "on"
+    id: leak_detected
+
+action:
+  - choose:
+      # Option 1: A leak sensor was triggered. This action runs immediately without any conditions.
+      - conditions:
+          - condition: trigger
+            id: "leak_detected"
+        sequence:
+          - alias: "Leak detected, run script immediately"
+            service: script.turn_on
+            target:
+              entity_id: !input action_script
+
+    # Default option: This runs if the trigger was not 'leak_detected' (i.e., it was 'water_flow_detected').
+    # It contains its own conditions.
+    default:
+      - condition: and
+        conditions:
+          # Condition 1: Check if the home mode sensor is off (indicating you are away).
+          - condition: state
+            entity_id: !input home_mode_sensor
+            state: "off"
+            alias: "Check if we are away"
+
+          # Condition 2: Check that all known water sources are off.
+          - condition: state
+            entity_id: !input override_group
+            state: "off"
+            alias: "Check that known water sources are off"
+        # This sequence only runs if the conditions for the water flow sensor are met.
+        sequence:
+          - alias: "Water flow detected and conditions met, running script"
+            service: script.turn_on
+            target:
+              entity_id: !input action_script
